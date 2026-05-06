@@ -266,6 +266,75 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
     }
   }, [ghToken, setSelectedRepo, setRepoTree, setRepoTreeLoading, setScreenFiles, setProjectAssets, setActiveTab, setCurrentProject, setCurrentScreenName])
 
+  // Extract balanced JSON from content - handles nested braces correctly
+  const extractBalancedJSON = (content: string, startIndex: number): string | null => {
+    let braceCount = 0
+    let inString = false
+    let escapeNext = false
+    let jsonEnd = startIndex
+    
+    for (let i = startIndex; i < content.length; i++) {
+      const char = content[i]
+      
+      if (escapeNext) {
+        escapeNext = false
+        continue
+      }
+      
+      if (char === '\\' && inString) {
+        escapeNext = true
+        continue
+      }
+      
+      if (char === '"' && !escapeNext) {
+        inString = !inString
+        continue
+      }
+      
+      if (!inString) {
+        if (char === '{') braceCount++
+        else if (char === '}') {
+          braceCount--
+          if (braceCount === 0) {
+            jsonEnd = i + 1
+            break
+          }
+        }
+      }
+    }
+    
+    if (braceCount !== 0) return null
+    return content.substring(startIndex, jsonEnd)
+  }
+
+  // Parse SCM file content - Kodular/App Inventor format
+  // Format: #|\n$JSON\n{...json...}\n|#
+  const parseSCMContent = (content: string): { json: string; prefix: string } | null => {
+    console.log("[v0] Parsing SCM, length:", content.length)
+    
+    // Find the first { which starts the JSON
+    const jsonStart = content.indexOf("{")
+    if (jsonStart === -1) {
+      console.error("[v0] No JSON object found in SCM")
+      return null
+    }
+    
+    // Get prefix (everything before {)
+    const prefix = content.substring(0, jsonStart)
+    console.log("[v0] SCM prefix:", prefix.substring(0, 50))
+    
+    // Extract the complete JSON object using brace balancing
+    const json = extractBalancedJSON(content, jsonStart)
+    
+    if (!json) {
+      console.error("[v0] Could not extract balanced JSON")
+      return null
+    }
+    
+    console.log("[v0] Extracted JSON length:", json.length)
+    return { json, prefix }
+  }
+
   const loadScreen = async (screen: ScreenFile, repo?: GitHubRepo, ownerOverride?: string) => {
     const currentRepo = repo || selectedRepo
     
@@ -280,17 +349,23 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
       // Load .scm file (screen components)
       const { content: scmContent, sha } = await fetchFileContent(ghToken, owner, currentRepo.name, screen.scmPath)
       
-      // Parse the SCM content - Kodular/App Inventor format
-      let jsonContent = scmContent
-      if (scmContent.includes("$JSON")) {
-        const jsonStart = scmContent.indexOf("{")
-        if (jsonStart !== -1) {
-          jsonContent = scmContent.substring(jsonStart)
-        }
+      console.log("[v0] SCM content length:", scmContent.length)
+      console.log("[v0] SCM content preview:", scmContent.substring(0, 200))
+      
+      // Parse the SCM content
+      const parsed = parseSCMContent(scmContent)
+      
+      if (!parsed) {
+        console.error("[v0] Could not parse SCM format")
+        return
       }
       
+      console.log("[v0] Parsed JSON preview:", parsed.json.substring(0, 200))
+      
       try {
-        const projectData = JSON.parse(jsonContent)
+        const projectData = JSON.parse(parsed.json)
+        console.log("[v0] Parsed project:", projectData.Properties?.$Name)
+        
         setCurrentProject(projectData)
         setCurrentScreenName(screen.name)
         setCurrentFile({
@@ -306,6 +381,7 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
         setActiveTab("componentes")
         setShowProperties(true)
         setSelectedComponent(projectData.Properties)
+        setShowWelcome(false)
         
         // Load .bky file if exists (blocks)
         if (screen.bkyPath) {
@@ -321,10 +397,11 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
         
         saveSnapshot()
       } catch (parseError) {
-        console.error("Erro ao parsear SCM:", parseError)
+        console.error("[v0] Erro ao parsear JSON do SCM:", parseError)
+        console.error("[v0] JSON que falhou:", parsed.json.substring(0, 500))
       }
     } catch (error) {
-      console.error("Erro ao carregar tela:", error)
+      console.error("[v0] Erro ao carregar tela:", error)
     } finally {
       setLoadingScreen(null)
     }
