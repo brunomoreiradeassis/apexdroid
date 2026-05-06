@@ -11,7 +11,7 @@ import {
   Calendar, MapPin, Phone, MessageSquare, Camera, Mic,
   Share2, Settings, Wifi, Bluetooth, ChevronDown, ChevronRight,
   Box, Layers, CreditCard, TextCursorInput, Sparkles, Send,
-  Smartphone, GitPullRequest, HardDrive, Network
+  Smartphone, GitPullRequest, HardDrive, Network, Search, X, Star
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -524,31 +524,40 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
   return (
     <aside className="bg-card border-r border-border flex shrink-0" style={{ width: "300px" }}>
       {/* Icon Rail - vertical tab icons */}
-      <div className="w-12 bg-card border-r border-border flex flex-col items-center py-2 gap-1 shrink-0">
+      <div className="w-12 bg-gradient-to-b from-card to-background border-r border-border flex flex-col items-center py-3 gap-1.5 shrink-0">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             title={tab.label}
             className={cn(
-              "w-9 h-9 flex items-center justify-center rounded-lg transition-all relative",
+              "w-9 h-9 flex items-center justify-center rounded-lg transition-all relative group",
               activeTab === tab.id
-                ? "bg-primary text-primary-foreground shadow-md"
+                ? "bg-primary text-primary-foreground shadow-lg glow-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             )}
           >
-            <tab.icon className="w-4 h-4" />
+            <tab.icon className={cn(
+              "w-4 h-4 transition-transform",
+              activeTab !== tab.id && "group-hover:scale-110"
+            )} />
             {tab.id === "chat" && chatMessages.length > 0 && (
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-success border-2 border-card" />
             )}
           </button>
         ))}
+        
+        {/* Spacer */}
+        <div className="flex-1" />
+        
+        {/* Bottom indicator */}
+        <div className="w-6 h-1 rounded-full bg-border" />
       </div>
 
       {/* Content panel */}
       <div className="flex-1 overflow-hidden flex flex-col" style={{ width: "248px" }}>
-        {/* Tab title */}
-        <div className="px-3 py-2 border-b border-border shrink-0">
+        {/* Tab title with gradient */}
+        <div className="px-3 py-2.5 border-b border-border shrink-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent">
           <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             {activeTabMeta?.title}
           </span>
@@ -556,58 +565,83 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
         {/* Palette Tab - Complete Kodular Components */}
         {activeTab === "componentes" && (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Search */}
-            <div className="p-2 border-b border-border">
-              <input
-                type="text"
-                placeholder="Buscar componentes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs bg-secondary border border-border rounded-lg focus:outline-none focus:border-primary"
-              />
+            {/* Search with icon */}
+            <div className="p-2.5 border-b border-border">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar componentes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 text-xs bg-input border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
+                />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
             
             <ScrollArea className="flex-1">
               <div className="p-2">
-                {filteredCategories.map((category) => (
-                  <div key={category.name} className="mb-2">
-                    {/* Category Header */}
-                    <button
-                      onClick={() => toggleCategory(category.name)}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:bg-secondary rounded transition-all"
+                {filteredCategories.length === 0 ? (
+                  <div className="flex flex-col items-center py-8 text-center">
+                    <Search className="w-8 h-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-xs text-muted-foreground">Nenhum componente encontrado</p>
+                    <button 
+                      onClick={() => setSearchQuery("")}
+                      className="text-xs text-primary hover:underline mt-1"
                     >
-                      {expandedCategories[category.name] ? (
-                        <ChevronDown className="w-3 h-3" />
-                      ) : (
-                        <ChevronRight className="w-3 h-3" />
-                      )}
-                      <category.icon className="w-3 h-3" />
-                      <span>{category.name}</span>
-                      <span className="ml-auto text-[9px] text-muted-foreground/50">
-                        {category.components.length}
-                      </span>
+                      Limpar busca
                     </button>
-                    
-                    {/* Category Components */}
-                    {expandedCategories[category.name] && (
-                      <div className="grid grid-cols-2 gap-1 mt-1 pl-4">
-                        {category.components.map((comp) => (
-                          <div
-                            key={comp.name}
-                            draggable
-                            onClick={() => handleComponentClick(comp.name)}
-                            onDragStart={() => handleDragStart(comp.name)}
-                            className="bg-card border border-border rounded-lg p-2 flex flex-col items-center gap-1 cursor-grab hover:border-primary hover:bg-secondary transition-all text-muted-foreground hover:text-foreground"
-                            title={comp.description}
-                          >
-                            <comp.icon className="w-4 h-4" />
-                            <span className="text-[9px] font-medium text-center leading-tight">{comp.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
-                ))}
+                ) : (
+                  filteredCategories.map((category) => (
+                    <div key={category.name} className="mb-3">
+                      {/* Category Header */}
+                      <button
+                        onClick={() => toggleCategory(category.name)}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:bg-secondary rounded-md transition-all group"
+                      >
+                        <span className={cn(
+                          "transition-transform",
+                          expandedCategories[category.name] ? "rotate-90" : "rotate-0"
+                        )}>
+                          <ChevronRight className="w-3 h-3" />
+                        </span>
+                        <category.icon className="w-3.5 h-3.5 text-primary/60" />
+                        <span className="flex-1 text-left">{category.name}</span>
+                        <span className="text-[9px] text-muted-foreground/50 bg-secondary px-1.5 py-0.5 rounded">
+                          {category.components.length}
+                        </span>
+                      </button>
+                      
+                      {/* Category Components */}
+                      {expandedCategories[category.name] && (
+                        <div className="grid grid-cols-2 gap-1.5 mt-1.5 pl-5">
+                          {category.components.map((comp) => (
+                            <div
+                              key={comp.name}
+                              draggable
+                              onClick={() => handleComponentClick(comp.name)}
+                              onDragStart={() => handleDragStart(comp.name)}
+                              className="component-item flex-col items-center gap-1.5 p-2 border border-border rounded-lg cursor-grab active:cursor-grabbing hover:border-primary/50 hover:shadow-sm"
+                              title={comp.description}
+                            >
+                              <comp.icon className="w-4 h-4" />
+                              <span className="text-[9px] font-medium text-center leading-tight">{comp.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </ScrollArea>
             

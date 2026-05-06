@@ -11,6 +11,8 @@ import { SettingsModal } from "@/components/ide/settings-modal"
 import { LoginModal } from "@/components/ide/login-modal"
 import { CommandPalette } from "@/components/ide/command-palette"
 import { ToastContainer } from "@/components/ide/toast"
+import { ErrorBoundary } from "@/components/ide/error-boundary"
+import { LoadingScreen } from "@/components/ide/loading-skeleton"
 import { useIDEStore } from "@/lib/ide-store"
 
 export default function IDEPage() {
@@ -48,53 +50,61 @@ export default function IDEPage() {
 
   if (!mounted) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="h-screen bg-background">
+        <LoadingScreen message="Carregando APEX DROID..." />
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <IDEHeader 
-        onBuildClick={() => setBuildModalOpen(true)}
-        onSettingsClick={() => setSettingsModalOpen(true)}
-      />
+    <ErrorBoundary>
+      <div className="h-screen bg-background flex flex-col overflow-hidden">
+        <IDEHeader 
+          onBuildClick={() => setBuildModalOpen(true)}
+          onSettingsClick={() => setSettingsModalOpen(true)}
+        />
 
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar onLoginClick={() => setLoginModalOpen(true)} />
-        <PhonePreview onLoginClick={() => setLoginModalOpen(true)} />
-        <PropertiesPanel onShowBlocks={() => setBlocksModalOpen(true)} />
+        <div className="flex flex-1 overflow-hidden">
+          <ErrorBoundary>
+            <Sidebar onLoginClick={() => setLoginModalOpen(true)} />
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <PhonePreview onLoginClick={() => setLoginModalOpen(true)} />
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <PropertiesPanel onShowBlocks={() => setBlocksModalOpen(true)} />
+          </ErrorBoundary>
+        </div>
+
+        {/* Modals */}
+        <BuildModal 
+          isOpen={buildModalOpen} 
+          onClose={() => setBuildModalOpen(false)} 
+        />
+        <BlocksModal 
+          isOpen={blocksModalOpen} 
+          onClose={() => setBlocksModalOpen(false)} 
+        />
+        <SettingsModal 
+          isOpen={settingsModalOpen} 
+          onClose={() => setSettingsModalOpen(false)} 
+        />
+        <LoginModal 
+          isOpen={loginModalOpen} 
+          onClose={() => setLoginModalOpen(false)} 
+        />
+
+        {/* Command Palette */}
+        <CommandPalette
+          onBuildClick={() => setBuildModalOpen(true)}
+          onSettingsClick={() => setSettingsModalOpen(true)}
+          onLoginClick={() => setLoginModalOpen(true)}
+          onBlocksClick={() => setBlocksModalOpen(true)}
+        />
+
+        {/* Toast Container */}
+        <ToastContainer />
       </div>
-
-      {/* Modals */}
-      <BuildModal 
-        isOpen={buildModalOpen} 
-        onClose={() => setBuildModalOpen(false)} 
-      />
-      <BlocksModal 
-        isOpen={blocksModalOpen} 
-        onClose={() => setBlocksModalOpen(false)} 
-      />
-      <SettingsModal 
-        isOpen={settingsModalOpen} 
-        onClose={() => setSettingsModalOpen(false)} 
-      />
-      <LoginModal 
-        isOpen={loginModalOpen} 
-        onClose={() => setLoginModalOpen(false)} 
-      />
-
-      {/* Command Palette */}
-      <CommandPalette
-        onBuildClick={() => setBuildModalOpen(true)}
-        onSettingsClick={() => setSettingsModalOpen(true)}
-        onLoginClick={() => setLoginModalOpen(true)}
-        onBlocksClick={() => setBlocksModalOpen(true)}
-      />
-
-      {/* Toast Container */}
-      <ToastContainer />
-    </div>
+    </ErrorBoundary>
   )
 }
