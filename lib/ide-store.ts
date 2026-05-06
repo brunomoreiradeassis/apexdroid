@@ -14,7 +14,10 @@ import type {
   GitHubRepo,
   GitHubTreeItem,
   ProjectAsset,
-  ScreenFile
+  ScreenFile,
+  Screen,
+  DragState,
+  HistorySnapshot
 } from "./ide-types"
 
 interface IDEState {
@@ -90,11 +93,29 @@ interface IDEState {
   addBuildLog: (log: BuildLog) => void
   clearBuildLogs: () => void
   
-  // History for undo
-  history: string[]
+  // History for undo/redo
+  history: HistorySnapshot[]
   historyIndex: number
   saveSnapshot: () => void
   undo: () => void
+  redo: () => void
+  canUndo: () => boolean
+  canRedo: () => boolean
+  
+  // Drag & Drop
+  dragState: DragState
+  setDragState: (state: DragState) => void
+  startDrag: (componentType: string, sourceType: "palette" | "tree") => void
+  endDrag: () => void
+  
+  // Multi-screen management
+  screens: Record<string, Screen>
+  addScreen: (name: string) => void
+  removeScreen: (name: string) => void
+  duplicateScreen: (name: string) => void
+  renameScreen: (oldName: string, newName: string) => void
+  switchScreen: (name: string) => void
+  getScreenNames: () => string[]
   
   // Component operations
   updateComponent: (name: string, props: Record<string, unknown>) => void
@@ -191,23 +212,191 @@ export const useIDEStore = create<IDEState>()(
       })),
       clearBuildLogs: () => set({ buildLogs: [] }),
       
-      // History
+      // History with undo/redo
       history: [],
       historyIndex: -1,
       saveSnapshot: () => {
-        const { currentProject, history, historyIndex } = get()
+        const { currentProject, currentScreenName, history, historyIndex } = get()
         if (!currentProject) return
+        
+        // Create snapshot
+        const snapshot: HistorySnapshot = {
+          screens: { [currentScreenName || "Screen1"]: JSON.parse(JSON.stringify(currentProject)) },
+          currentScreenName,
+          timestamp: Date.now()
+        }
+        
+        // Trim future history if we're not at the end
         const newHistory = history.slice(0, historyIndex + 1)
-        newHistory.push(JSON.stringify(currentProject))
+        newHistory.push(snapshot)
+        
+        // Limit history to 50 snapshots
+        if (newHistory.length > 50) {
+          newHistory.shift()
+        }
+        
         set({ history: newHistory, historyIndex: newHistory.length - 1 })
       },
       undo: () => {
-        const { history, historyIndex } = get()
+        const { history, historyIndex, currentScreenName } = get()
         if (historyIndex > 0) {
           const newIndex = historyIndex - 1
-          const project = JSON.parse(history[newIndex])
-          set({ historyIndex: newIndex, currentProject: project })
+          const snapshot = history[newIndex]
+          const screenName = currentScreenName || "Screen1"
+          const project = snapshot.screens[screenName]
+          if (project) {
+            set({ historyIndex: newIndex, currentProject: JSON.parse(JSON.stringify(project)) })
+          }
         }
+      },
+      redo: () => {
+        const { history, historyIndex, currentScreenName } = get()
+        if (historyIndex < history.length - 1) {
+          const newIndex = historyIndex + 1
+          const snapshot = history[newIndex]
+          const screenName = currentScreenName || "Screen1"
+          const project = snapshot.screens[screenName]
+          if (project) {
+            set({ historyIndex: newIndex, currentProject: JSON.parse(JSON.stringify(project)) })
+          }
+        }
+      },
+      canUndo: () => {
+        const { historyIndex } = get()
+        return historyIndex > 0
+      },
+      canRedo: () => {
+        const { history, historyIndex } = get()
+        return historyIndex < history.length - 1
+      },
+      
+      // Drag & Drop state
+      dragState: {
+        isDragging: false,
+        componentType: null,
+        sourceType: null
+      },
+      setDragState: (state) => set({ dragState: state }),
+      startDrag: (componentType, sourceType) => set({ 
+        dragState: { isDragging: true, componentType, sourceType } 
+      }),
+      endDrag: () => set({ 
+        dragState: { isDragging: false, componentType: null, sourceType: null } 
+      }),
+      
+      // Multi-screen management
+      screens: {},
+      addScreen: (name) => {
+        const { screens, saveSnapshot } = get()
+        if (screens[name]) return // Already exists
+        
+        const newScreen: Screen = {
+          name,
+          data: {
+            Properties: {
+              $Type: "Form",
+              $Name: name,
+              Title: name,
+              $Components: []
+            }
+          },
+          bkyContent: null
+        }
+        
+        set({ screens: { ...screens, [name]: newScreen } })
+        saveSnapshot()
+      },
+      removeScreen: (name) => {
+        const { screens, currentScreenName, saveSnapshot } = get()
+        if (Object.keys(screens).length <= 1) return // Can't remove last screen
+        
+        const newScreens = { ...screens }
+        delete newScreens[name]
+        
+        // If removing current screen, switch to another
+        let newCurrentScreen = currentScreenName
+        if (currentScreenName === name) {
+          newCurrentScreen = Object.keys(newScreens)[0]
+          set({ 
+            currentScreenName: newCurrentScreen,
+            currentProject: newScreens[newCurrentScreen]?.data || null
+          })
+        }
+        
+        set({ screens: newScreens })
+        saveSnapshot()
+      },
+      duplicateScreen: (name) => {
+        const { screens, saveSnapshot } = get()
+        const screen = screens[name]
+        if (!screen) return
+        
+        // Generate unique name
+        let counter = 1
+        let newName = `${name}_copy`
+        while (screens[newName]) {
+          newName = `${name}_copy${counter}`
+          counter++
+        }
+        
+        const newScreen: Screen = {
+          name: newName,
+          data: screen.data ? JSON.parse(JSON.stringify(screen.data)) : null,
+          bkyContent: screen.bkyContent
+        }
+        
+        if (newScreen.data) {
+          newScreen.data.Properties.$Name = newName
+          newScreen.data.Properties.Title = newName
+        }
+        
+        set({ screens: { ...screens, [newName]: newScreen } })
+        saveSnapshot()
+      },
+      renameScreen: (oldName, newName) => {
+        const { screens, currentScreenName, saveSnapshot } = get()
+        if (!screens[oldName] || screens[newName]) return
+        
+        const screen = screens[oldName]
+        const newScreens = { ...screens }
+        delete newScreens[oldName]
+        
+        const renamedScreen: Screen = {
+          ...screen,
+          name: newName,
+          data: screen.data ? {
+            ...screen.data,
+            Properties: {
+              ...screen.data.Properties,
+              $Name: newName,
+              Title: newName
+            }
+          } : null
+        }
+        
+        newScreens[newName] = renamedScreen
+        
+        set({ 
+          screens: newScreens,
+          currentScreenName: currentScreenName === oldName ? newName : currentScreenName
+        })
+        saveSnapshot()
+      },
+      switchScreen: (name) => {
+        const { screens } = get()
+        const screen = screens[name]
+        if (screen) {
+          set({ 
+            currentScreenName: name,
+            currentProject: screen.data,
+            currentBkyContent: screen.bkyContent,
+            selectedComponent: null
+          })
+        }
+      },
+      getScreenNames: () => {
+        const { screens } = get()
+        return Object.keys(screens)
       },
       
       // Component operations

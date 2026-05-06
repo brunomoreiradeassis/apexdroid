@@ -133,3 +133,34 @@ export interface ScreenFile {
   scmPath: string
   bkyPath: string | null
 }
+
+export interface Screen {
+  name: string
+  data: ProjectData | null
+  bkyContent: string | null
+}
+
+export interface DragState {
+  isDragging: boolean
+  componentType: string | null
+  sourceType: "palette" | "tree" | null
+}
+
+export interface HistorySnapshot {
+  screens: Record<string, ProjectData>
+  currentScreenName: string | null
+  timestamp: number
+}
+
+export interface ProjectTemplate {
+  id: string
+  name: string
+  description: string
+  icon: string
+  category: "starter" | "business" | "social" | "utility"
+  screens: {
+    name: string
+    data: ProjectData
+  }[]
+  preview?: string
+}
