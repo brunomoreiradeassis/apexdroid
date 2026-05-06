@@ -1,10 +1,35 @@
 "use client"
 
-import { Edit3, Play, Zap, PlusCircle, Github } from "lucide-react"
+import { useState } from "react"
+import { Edit3, Play, Zap, PlusCircle, Github, Smartphone, Tablet, Monitor, RotateCcw, Maximize2, Minimize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useIDEStore } from "@/lib/ide-store"
 import type { KodularComponent } from "@/lib/ide-types"
 import { cn } from "@/lib/utils"
+
+// Device presets
+const devicePresets = {
+  phone: [
+    { name: "iPhone SE", width: 375, height: 667 },
+    { name: "iPhone 14", width: 390, height: 844 },
+    { name: "iPhone 14 Pro Max", width: 430, height: 932 },
+    { name: "Samsung Galaxy S21", width: 360, height: 800 },
+    { name: "Pixel 7", width: 412, height: 915 },
+  ],
+  tablet: [
+    { name: "iPad Mini", width: 768, height: 1024 },
+    { name: "iPad Air", width: 820, height: 1180 },
+    { name: "iPad Pro 11\"", width: 834, height: 1194 },
+    { name: "iPad Pro 12.9\"", width: 1024, height: 1366 },
+    { name: "Samsung Tab S7", width: 800, height: 1280 },
+  ],
+  custom: [
+    { name: "HD (720p)", width: 720, height: 1280 },
+    { name: "Full HD (1080p)", width: 1080, height: 1920 },
+    { name: "QHD (1440p)", width: 1440, height: 2560 },
+  ]
+}
 
 // Kodular color converter
 function convertColor(k?: string): string {
@@ -73,7 +98,7 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
         onClick={handleClick}
         className={cn(
           "px-3 py-2 text-center rounded text-sm cursor-pointer transition-all",
-          isSelected && "ring-2 ring-primary ring-offset-1"
+          isSelected && "ring-2 ring-blue-500 ring-offset-1"
         )}
         style={{
           ...baseStyle,
@@ -92,7 +117,7 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
         onClick={handleClick}
         className={cn(
           "cursor-pointer transition-all px-1",
-          isSelected && "ring-2 ring-primary ring-offset-1 rounded"
+          isSelected && "ring-2 ring-blue-500 ring-offset-1 rounded"
         )}
         style={{
           ...baseStyle,
@@ -116,12 +141,31 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
         readOnly={appMode === "edit"}
         className={cn(
           "px-3 py-2 rounded border text-sm w-full cursor-pointer",
-          isSelected && "ring-2 ring-primary ring-offset-1"
+          isSelected && "ring-2 ring-blue-500 ring-offset-1"
         )}
         style={{
           ...baseStyle,
           borderColor: "#ccc",
           color: convertColor(component.TextColor || "&HFF000000")
+        }}
+      />
+    )
+  }
+
+  if ($Type === "PasswordTextBox") {
+    return (
+      <input
+        type="password"
+        placeholder={component.Hint as string || "Senha..."}
+        onClick={handleClick}
+        readOnly={appMode === "edit"}
+        className={cn(
+          "px-3 py-2 rounded border text-sm w-full cursor-pointer",
+          isSelected && "ring-2 ring-blue-500 ring-offset-1"
+        )}
+        style={{
+          ...baseStyle,
+          borderColor: "#ccc"
         }}
       />
     )
@@ -134,7 +178,7 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
         onClick={handleClick}
         className={cn(
           "cursor-pointer transition-all flex items-center justify-center",
-          isSelected && "ring-2 ring-primary ring-offset-1 rounded"
+          isSelected && "ring-2 ring-blue-500 ring-offset-1 rounded"
         )}
         style={baseStyle}
       >
@@ -153,14 +197,80 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
     )
   }
 
+  if ($Type === "CheckBox") {
+    return (
+      <label
+        onClick={handleClick}
+        className={cn(
+          "flex items-center gap-2 cursor-pointer transition-all px-1",
+          isSelected && "ring-2 ring-blue-500 ring-offset-1 rounded"
+        )}
+        style={baseStyle}
+      >
+        <input type="checkbox" className="w-4 h-4" readOnly={appMode === "edit"} />
+        <span className="text-sm">{component.Text || "CheckBox"}</span>
+      </label>
+    )
+  }
+
+  if ($Type === "Switch") {
+    return (
+      <div
+        onClick={handleClick}
+        className={cn(
+          "flex items-center gap-2 cursor-pointer transition-all px-1",
+          isSelected && "ring-2 ring-blue-500 ring-offset-1 rounded"
+        )}
+        style={baseStyle}
+      >
+        <div className="w-10 h-5 bg-gray-300 rounded-full relative">
+          <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow"></div>
+        </div>
+        <span className="text-sm">{component.Text || ""}</span>
+      </div>
+    )
+  }
+
+  if ($Type === "Slider") {
+    return (
+      <div
+        onClick={handleClick}
+        className={cn(
+          "cursor-pointer transition-all px-1 py-2 w-full",
+          isSelected && "ring-2 ring-blue-500 ring-offset-1 rounded"
+        )}
+        style={baseStyle}
+      >
+        <input type="range" className="w-full" readOnly={appMode === "edit"} />
+      </div>
+    )
+  }
+
+  if ($Type === "Spinner") {
+    return (
+      <select
+        onClick={handleClick}
+        className={cn(
+          "px-3 py-2 rounded border text-sm w-full cursor-pointer",
+          isSelected && "ring-2 ring-blue-500 ring-offset-1"
+        )}
+        style={baseStyle}
+      >
+        <option>{component.Selection as string || "Selecione..."}</option>
+      </select>
+    )
+  }
+
   if ($Type.includes("Arrangement")) {
     const isVertical = $Type.includes("Vertical")
+    const isScroll = $Type.includes("Scroll")
     return (
       <div
         onClick={handleClick}
         className={cn(
           "flex gap-2 p-2 cursor-pointer transition-all min-h-[40px]",
-          isSelected && "ring-2 ring-primary ring-offset-1 rounded"
+          isSelected && "ring-2 ring-blue-500 ring-offset-1 rounded",
+          isScroll && "overflow-auto"
         )}
         style={{
           ...baseStyle,
@@ -187,6 +297,32 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
     )
   }
 
+  if ($Type === "CardView") {
+    return (
+      <div
+        onClick={handleClick}
+        className={cn(
+          "bg-white rounded-lg shadow-md p-3 cursor-pointer transition-all",
+          isSelected && "ring-2 ring-blue-500 ring-offset-1"
+        )}
+        style={baseStyle}
+      >
+        {$Components?.map((child) => (
+          <ComponentRenderer
+            key={child.$Name}
+            component={child}
+            onSelect={onSelect}
+            selectedName={selectedName}
+            appMode={appMode}
+          />
+        ))}
+        {(!$Components || $Components.length === 0) && appMode === "edit" && (
+          <div className="text-xs text-gray-400 text-center py-2">CardView</div>
+        )}
+      </div>
+    )
+  }
+
   if ($Type === "ListView") {
     const elements = (component.Elements as string)?.split(",") || []
     return (
@@ -194,13 +330,13 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
         onClick={handleClick}
         className={cn(
           "cursor-pointer transition-all border rounded overflow-hidden",
-          isSelected && "ring-2 ring-primary ring-offset-1"
+          isSelected && "ring-2 ring-blue-500 ring-offset-1"
         )}
         style={baseStyle}
       >
         {elements.length > 0 ? (
           elements.slice(0, 5).map((item, i) => (
-            <div key={i} className="px-3 py-2 border-b last:border-b-0 text-sm">
+            <div key={i} className="px-3 py-2 border-b last:border-b-0 text-sm bg-white">
               {item.trim()}
             </div>
           ))
@@ -211,13 +347,49 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
     )
   }
 
+  if ($Type === "WebViewer") {
+    return (
+      <div
+        onClick={handleClick}
+        className={cn(
+          "cursor-pointer transition-all border rounded bg-white flex items-center justify-center",
+          isSelected && "ring-2 ring-blue-500 ring-offset-1"
+        )}
+        style={{ ...baseStyle, minHeight: "100px" }}
+      >
+        <div className="text-xs text-gray-400 text-center p-4">
+          <Monitor className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          WebViewer
+        </div>
+      </div>
+    )
+  }
+
+  if ($Type === "VideoPlayer") {
+    return (
+      <div
+        onClick={handleClick}
+        className={cn(
+          "cursor-pointer transition-all border rounded bg-black flex items-center justify-center",
+          isSelected && "ring-2 ring-blue-500 ring-offset-1"
+        )}
+        style={{ ...baseStyle, minHeight: "80px" }}
+      >
+        <div className="text-xs text-white text-center p-4">
+          <Play className="w-8 h-8 mx-auto mb-2 opacity-70" />
+          VideoPlayer
+        </div>
+      </div>
+    )
+  }
+
   // Default rendering for other components
   return (
     <div
       onClick={handleClick}
       className={cn(
         "cursor-pointer transition-all p-2 rounded bg-gray-100",
-        isSelected && "ring-2 ring-primary ring-offset-1"
+        isSelected && "ring-2 ring-blue-500 ring-offset-1"
       )}
       style={baseStyle}
     >
@@ -235,13 +407,34 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
   const { 
     currentProject, appMode, setAppMode,
     selectedComponent, setSelectedComponent, setShowProperties,
-    selectedRepo, currentScreenName, setActiveTab, screenFiles
+    selectedRepo, currentScreenName, setActiveTab
   } = useIDEStore()
+
+  // Device state
+  const [deviceType, setDeviceType] = useState<"phone" | "tablet">("phone")
+  const [selectedDevice, setSelectedDevice] = useState(devicePresets.phone[1]) // iPhone 14
+  const [isLandscape, setIsLandscape] = useState(false)
+  const [scale, setScale] = useState(0.7)
 
   const handleComponentSelect = (comp: KodularComponent) => {
     setSelectedComponent(comp)
     setShowProperties(true)
   }
+
+  const handleDeviceChange = (deviceName: string) => {
+    const allDevices = [...devicePresets.phone, ...devicePresets.tablet, ...devicePresets.custom]
+    const device = allDevices.find(d => d.name === deviceName)
+    if (device) {
+      setSelectedDevice(device)
+    }
+  }
+
+  const toggleOrientation = () => {
+    setIsLandscape(!isLandscape)
+  }
+
+  const deviceWidth = isLandscape ? selectedDevice.height : selectedDevice.width
+  const deviceHeight = isLandscape ? selectedDevice.width : selectedDevice.height
 
   // Show welcome screen when no repo selected
   if (!selectedRepo) {
@@ -338,9 +531,9 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
   const props = currentProject.Properties
 
   return (
-    <main className="flex-1 bg-background flex flex-col items-center justify-center relative overflow-hidden min-w-[400px]">
+    <main className="flex-1 bg-background flex flex-col relative overflow-hidden min-w-[400px]">
       {/* Background pattern */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
         <div 
           className="w-full h-full"
           style={{
@@ -350,103 +543,262 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
         />
       </div>
 
-      {/* Mode Toggle */}
-      <div className="absolute top-5 left-5 bg-card rounded-xl p-1 border border-border z-10 flex gap-1">
-        <Button
-          variant={appMode === "edit" ? "default" : "ghost"}
-          size="sm"
-          className="gap-1.5 text-xs"
-          onClick={() => setAppMode("edit")}
-        >
-          <Edit3 className="w-3.5 h-3.5" />
-          Design
-        </Button>
-        <Button
-          variant={appMode === "run" ? "default" : "ghost"}
-          size="sm"
-          className="gap-1.5 text-xs"
-          onClick={() => setAppMode("run")}
-        >
-          <Play className="w-3.5 h-3.5" />
-          Live
-        </Button>
-      </div>
-
-      {/* Current Screen Name */}
-      {currentScreenName && (
-        <div className="absolute top-5 right-5 bg-card rounded-lg px-3 py-1.5 border border-border z-10">
-          <span className="text-xs text-muted-foreground">Tela: </span>
-          <span className="text-xs font-medium">{currentScreenName}</span>
-        </div>
-      )}
-
-      {/* Phone Mockup */}
-      <div 
-        className="w-[340px] h-[680px] bg-white rounded-[36px] shadow-2xl border-[10px] border-secondary overflow-hidden flex flex-col relative z-10"
-        style={{ transform: "scale(0.9)" }}
-      >
-        {/* Status Bar / Title */}
-        {props.TitleVisible !== "False" && (
-          <div 
-            className="px-4 py-3.5 text-sm font-semibold"
-            style={{
-              backgroundColor: convertColor(props.TitleBarColor || "&HFF6200EE"),
-              color: "white"
-            }}
-          >
-            {props.Title || props.$Name}
+      {/* Top Controls Bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm z-10">
+        {/* Left: Mode Toggle */}
+        <div className="flex items-center gap-2">
+          <div className="bg-secondary rounded-lg p-0.5 flex gap-0.5">
+            <Button
+              variant={appMode === "edit" ? "default" : "ghost"}
+              size="sm"
+              className="gap-1.5 text-xs h-7"
+              onClick={() => setAppMode("edit")}
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              Design
+            </Button>
+            <Button
+              variant={appMode === "run" ? "default" : "ghost"}
+              size="sm"
+              className="gap-1.5 text-xs h-7"
+              onClick={() => setAppMode("run")}
+            >
+              <Play className="w-3.5 h-3.5" />
+              Live
+            </Button>
           </div>
-        )}
+        </div>
 
-        {/* Screen Content */}
-        <div 
-          className="flex-1 overflow-auto flex flex-col p-2"
-          style={{
-            backgroundColor: convertColor(props.BackgroundColor || "&HFFFFFFFF"),
-            alignItems: convertAlignment(props.AlignHorizontal),
-            justifyContent: convertAlignment(props.AlignVertical)
-          }}
-        >
-          {props.$Components?.map((comp) => (
-            <ComponentRenderer
-              key={comp.$Name}
-              component={comp}
-              onSelect={handleComponentSelect}
-              selectedName={selectedComponent?.$Name}
-              appMode={appMode}
-            />
-          ))}
-          
-          {(!props.$Components || props.$Components.length === 0) && appMode === "edit" && (
-            <div className="flex-1 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-sm m-2">
-              Arraste componentes da paleta para ca
+        {/* Center: Device Selection */}
+        <div className="flex items-center gap-2">
+          {/* Device Type Tabs */}
+          <div className="bg-secondary rounded-lg p-0.5 flex gap-0.5">
+            <Button
+              variant={deviceType === "phone" ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => {
+                setDeviceType("phone")
+                setSelectedDevice(devicePresets.phone[1])
+              }}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant={deviceType === "tablet" ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => {
+                setDeviceType("tablet")
+                setSelectedDevice(devicePresets.tablet[0])
+              }}
+            >
+              <Tablet className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+
+          {/* Device Dropdown */}
+          <Select value={selectedDevice.name} onValueChange={handleDeviceChange}>
+            <SelectTrigger className="w-[160px] h-7 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground">CELULARES</div>
+              {devicePresets.phone.map(device => (
+                <SelectItem key={device.name} value={device.name} className="text-xs">
+                  {device.name} ({device.width}x{device.height})
+                </SelectItem>
+              ))}
+              <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground mt-1">TABLETS</div>
+              {devicePresets.tablet.map(device => (
+                <SelectItem key={device.name} value={device.name} className="text-xs">
+                  {device.name} ({device.width}x{device.height})
+                </SelectItem>
+              ))}
+              <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground mt-1">RESOLUÇÕES</div>
+              {devicePresets.custom.map(device => (
+                <SelectItem key={device.name} value={device.name} className="text-xs">
+                  {device.name} ({device.width}x{device.height})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Orientation Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2"
+            onClick={toggleOrientation}
+          >
+            <RotateCcw className={cn("w-3.5 h-3.5 transition-transform", isLandscape && "rotate-90")} />
+          </Button>
+
+          {/* Scale Controls */}
+          <div className="flex items-center gap-1 ml-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setScale(Math.max(0.3, scale - 0.1))}
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </Button>
+            <span className="text-xs text-muted-foreground w-10 text-center">
+              {Math.round(scale * 100)}%
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              onClick={() => setScale(Math.min(1, scale + 0.1))}
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Right: Screen Name */}
+        <div className="flex items-center gap-2">
+          {currentScreenName && (
+            <div className="bg-secondary rounded-lg px-3 py-1">
+              <span className="text-[10px] text-muted-foreground">Tela: </span>
+              <span className="text-xs font-medium">{currentScreenName}</span>
             </div>
           )}
-        </div>
-
-        {/* Non-Visible Bar */}
-        {props.$Components?.some(c => 
-          ["Clock", "Sound", "Notifier", "TinyDB", "Web", "Firebase", "Cloudinary"].includes(c.$Type)
-        ) && (
-          <div className="bg-gray-100 border-t border-gray-200 px-3 py-2 flex gap-2 overflow-x-auto">
-            <span className="text-[10px] text-gray-400 opacity-50 shrink-0">NAO VISIVEIS</span>
-            {props.$Components
-              .filter(c => ["Clock", "Sound", "Notifier", "TinyDB", "Web", "Firebase", "Cloudinary"].includes(c.$Type))
-              .map(c => (
-                <div 
-                  key={c.$Name}
-                  className={cn(
-                    "bg-white border px-2.5 py-1 rounded text-[10px] font-semibold cursor-pointer hover:border-primary shrink-0",
-                    selectedComponent?.$Name === c.$Name ? "border-primary bg-primary/10" : "border-gray-300"
-                  )}
-                  onClick={() => handleComponentSelect(c)}
-                >
-                  {c.$Name}
-                </div>
-              ))
-            }
+          <div className="text-[10px] text-muted-foreground">
+            {deviceWidth} x {deviceHeight}
           </div>
-        )}
+        </div>
+      </div>
+
+      {/* Preview Area */}
+      <div className="flex-1 flex items-center justify-center overflow-auto p-4">
+        {/* Device Frame */}
+        <div 
+          className="relative transition-all duration-300"
+          style={{ transform: `scale(${scale})` }}
+        >
+          {/* Device Bezel */}
+          <div 
+            className={cn(
+              "bg-zinc-900 rounded-[40px] shadow-2xl relative",
+              deviceType === "tablet" && "rounded-[32px]"
+            )}
+            style={{
+              padding: deviceType === "phone" ? "12px" : "16px",
+              paddingTop: deviceType === "phone" ? "32px" : "20px",
+              paddingBottom: deviceType === "phone" ? "32px" : "20px"
+            }}
+          >
+            {/* Notch/Camera (for phones) */}
+            {deviceType === "phone" && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-zinc-900 rounded-full flex items-center justify-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
+                <div className="w-12 h-4 rounded-full bg-zinc-800"></div>
+              </div>
+            )}
+
+            {/* Screen */}
+            <div 
+              className="bg-white overflow-hidden flex flex-col"
+              style={{
+                width: `${deviceWidth}px`,
+                height: `${deviceHeight}px`,
+                borderRadius: deviceType === "phone" ? "28px" : "16px"
+              }}
+            >
+              {/* Status Bar */}
+              <div className="h-6 bg-zinc-900 flex items-center justify-between px-4 text-white text-[10px] shrink-0">
+                <span>9:41</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-2 border border-white rounded-sm">
+                    <div className="w-2/3 h-full bg-white rounded-sm"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Title Bar */}
+              {props.TitleVisible !== "False" && (
+                <div 
+                  className="px-4 py-3 text-sm font-semibold shrink-0"
+                  style={{
+                    backgroundColor: convertColor(props.TitleBarColor || "&HFF6200EE"),
+                    color: "white"
+                  }}
+                >
+                  {props.Title || props.$Name}
+                </div>
+              )}
+
+              {/* Screen Content */}
+              <div 
+                className="flex-1 overflow-auto flex flex-col p-2"
+                onClick={() => {
+                  if (appMode === "edit") {
+                    // Click on empty area - select the screen itself
+                    setSelectedComponent(props)
+                    setShowProperties(true)
+                  }
+                }}
+                style={{
+                  backgroundColor: convertColor(props.BackgroundColor || "&HFFFFFFFF"),
+                  alignItems: convertAlignment(props.AlignHorizontal),
+                  justifyContent: convertAlignment(props.AlignVertical)
+                }}
+              >
+                {props.$Components?.map((comp) => (
+                  <ComponentRenderer
+                    key={comp.$Name}
+                    component={comp}
+                    onSelect={handleComponentSelect}
+                    selectedName={selectedComponent?.$Name}
+                    appMode={appMode}
+                  />
+                ))}
+                
+                {(!props.$Components || props.$Components.length === 0) && appMode === "edit" && (
+                  <div className="flex-1 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-sm m-2">
+                    <div className="text-center">
+                      <PlusCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>Arraste componentes da paleta</p>
+                      <p className="text-xs mt-1">ou clique em um componente para adicionar</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Non-Visible Components Bar */}
+              {props.$Components?.some(c => 
+                ["Clock", "Sound", "Notifier", "TinyDB", "Web", "Firebase", "Cloudinary"].includes(c.$Type)
+              ) && (
+                <div className="bg-gray-100 border-t border-gray-200 px-3 py-2 flex gap-2 overflow-x-auto shrink-0">
+                  <span className="text-[10px] text-gray-400 opacity-50 shrink-0">NAO VISIVEIS</span>
+                  {props.$Components
+                    .filter(c => ["Clock", "Sound", "Notifier", "TinyDB", "Web", "Firebase", "Cloudinary"].includes(c.$Type))
+                    .map(c => (
+                      <div 
+                        key={c.$Name}
+                        className={cn(
+                          "bg-white border px-2.5 py-1 rounded text-[10px] font-semibold cursor-pointer hover:border-blue-500 shrink-0",
+                          selectedComponent?.$Name === c.$Name ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                        )}
+                        onClick={() => handleComponentSelect(c)}
+                      >
+                        {c.$Name}
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+            </div>
+
+            {/* Home Indicator (for phones) */}
+            {deviceType === "phone" && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-zinc-600 rounded-full"></div>
+            )}
+          </div>
+        </div>
       </div>
     </main>
   )
