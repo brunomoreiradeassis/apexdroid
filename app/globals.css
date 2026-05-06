@@ -384,7 +384,8 @@
 
 /* Focus ring */
 .focus-ring {
-  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring), 0 0 0 4px var(--background);
 }
 
 /* Transition utilities */
@@ -415,10 +416,23 @@
 
 /* Component hover state */
 .component-item {
-  @apply flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors-fast;
-  @apply hover:bg-secondary text-muted-foreground hover:text-foreground;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  color: var(--muted-foreground);
+}
+
+.component-item:hover {
+  background-color: var(--secondary);
+  color: var(--foreground);
 }
 
 .component-item-active {
-  @apply bg-primary/10 text-primary border border-primary/20;
+  background-color: oklch(0.62 0.25 265 / 0.1);
+  color: var(--primary);
+  border: 1px solid oklch(0.62 0.25 265 / 0.2);
 }

@@ -57,7 +57,40 @@ export interface CloudUser {
 export interface BuildLog {
   timestamp: Date
   message: string
-  type: "log" | "info" | "error"
+  type: "log" | "info" | "error" | "success" | "warning"
+}
+
+export interface BuildConfig {
+  mode: "debug" | "release"
+  packageName: string
+  versionCode: number
+  versionName: string
+  minSdk: number
+  targetSdk: number
+  keystoreAlias?: string
+}
+
+export interface BuildResult {
+  id: string
+  status: "queued" | "building" | "completed" | "failed"
+  progress: number
+  apkUrl?: string
+  apkSize?: number
+  qrCode?: string
+  startedAt: Date
+  completedAt?: Date
+  error?: string
+}
+
+export interface BuildHistoryItem {
+  id: string
+  projectName: string
+  status: "completed" | "failed"
+  apkUrl?: string
+  apkSize?: number
+  buildTime: number
+  createdAt: Date
+  config: BuildConfig
 }
 
 export interface GitHubRepo {
