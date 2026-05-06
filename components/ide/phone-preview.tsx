@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Edit3, Play, Zap, PlusCircle, Github, Smartphone, Tablet, Monitor, RotateCcw, Maximize2, Minimize2 } from "lucide-react"
+import { Edit3, Play, Zap, PlusCircle, Github, Smartphone, Tablet, Monitor, RotateCcw, Maximize2, Minimize2, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useIDEStore } from "@/lib/ide-store"
@@ -415,6 +415,7 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
   const [selectedDevice, setSelectedDevice] = useState(devicePresets.phone[1]) // iPhone 14
   const [isLandscape, setIsLandscape] = useState(false)
   const [scale, setScale] = useState(0.7)
+  const [showHiddenComponents, setShowHiddenComponents] = useState(false)
 
   const handleComponentSelect = (comp: KodularComponent) => {
     setSelectedComponent(comp)
@@ -656,6 +657,21 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
               <Maximize2 className="w-3.5 h-3.5" />
             </Button>
           </div>
+
+          {/* Show Hidden Components Toggle */}
+          <Button
+            variant={showHiddenComponents ? "default" : "ghost"}
+            size="sm"
+            className="h-7 px-2 gap-1.5"
+            onClick={() => setShowHiddenComponents(!showHiddenComponents)}
+            title={showHiddenComponents ? "Esconder componentes ocultos" : "Mostrar componentes ocultos"}
+          >
+            {showHiddenComponents ? (
+              <Eye className="w-3.5 h-3.5" />
+            ) : (
+              <EyeOff className="w-3.5 h-3.5" />
+            )}
+          </Button>
         </div>
 
         {/* Right: Screen Name */}
@@ -747,15 +763,23 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
                   justifyContent: convertAlignment(props.AlignVertical)
                 }}
               >
-                {props.$Components?.map((comp) => (
-                  <ComponentRenderer
-                    key={comp.$Name}
-                    component={comp}
-                    onSelect={handleComponentSelect}
-                    selectedName={selectedComponent?.$Name}
-                    appMode={appMode}
-                  />
-                ))}
+                {props.$Components?.map((comp) => {
+                  // Filter hidden components based on showHiddenComponents flag
+                  const isHidden = comp.Visible === "False" || comp.Hidden === "True"
+                  if (isHidden && !showHiddenComponents) {
+                    return null
+                  }
+                  
+                  return (
+                    <ComponentRenderer
+                      key={comp.$Name}
+                      component={comp}
+                      onSelect={handleComponentSelect}
+                      selectedName={selectedComponent?.$Name}
+                      appMode={appMode}
+                    />
+                  )
+                })}
                 
                 {(!props.$Components || props.$Components.length === 0) && appMode === "edit" && (
                   <div className="flex-1 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-sm m-2">
