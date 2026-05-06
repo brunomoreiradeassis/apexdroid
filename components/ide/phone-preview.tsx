@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useIDEStore } from "@/lib/ide-store"
 import type { KodularComponent, ProjectAsset } from "@/lib/ide-types"
 import { cn } from "@/lib/utils"
+import { DroppableZone, EmptyDropZone } from "./droppable-zone"
+import { useIDEDnd } from "./dnd-context"
 
 // Device presets
 const devicePresets = {
@@ -287,10 +289,11 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode, assets 
     const isVertical = $Type.includes("Vertical")
     const isScroll = $Type.includes("Scroll")
     return (
-      <div
-        onClick={handleClick}
+      <DroppableZone
+        id={`drop-${$Name}`}
+        targetName={$Name}
         className={cn(
-          "flex gap-2 p-2 cursor-pointer transition-all min-h-[40px]",
+          "flex gap-2 p-2 cursor-pointer transition-all min-h-[40px] relative",
           isSelected && "ring-2 ring-blue-500 ring-offset-1 rounded",
           isScroll && "overflow-auto"
         )}
@@ -300,7 +303,9 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode, assets 
           alignItems: convertAlignment(component.AlignHorizontal),
           justifyContent: convertAlignment(component.AlignVertical)
         }}
+        disabled={appMode !== "edit"}
       >
+        <div onClick={handleClick} className="absolute inset-0 z-0" />
         {$Components?.map((child) => (
           <ComponentRenderer
             key={child.$Name}
@@ -308,27 +313,33 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode, assets 
             onSelect={onSelect}
             selectedName={selectedName}
             appMode={appMode}
+            assets={assets}
           />
         ))}
         {(!$Components || $Components.length === 0) && appMode === "edit" && (
-          <div className="flex-1 border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-xs text-gray-400 min-h-[30px]">
-            Arraste componentes aqui
-          </div>
+          <EmptyDropZone
+            id={`empty-${$Name}`}
+            targetName={$Name}
+            className="flex-1 min-h-[30px]"
+          />
         )}
-      </div>
+      </DroppableZone>
     )
   }
 
   if ($Type === "CardView") {
     return (
-      <div
-        onClick={handleClick}
+      <DroppableZone
+        id={`drop-${$Name}`}
+        targetName={$Name}
         className={cn(
-          "bg-white rounded-lg shadow-md p-3 cursor-pointer transition-all",
+          "bg-white rounded-lg shadow-md p-3 cursor-pointer transition-all relative",
           isSelected && "ring-2 ring-blue-500 ring-offset-1"
         )}
         style={baseStyle}
+        disabled={appMode !== "edit"}
       >
+        <div onClick={handleClick} className="absolute inset-0 z-0" />
         {$Components?.map((child) => (
           <ComponentRenderer
             key={child.$Name}
@@ -336,12 +347,17 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode, assets 
             onSelect={onSelect}
             selectedName={selectedName}
             appMode={appMode}
+            assets={assets}
           />
         ))}
         {(!$Components || $Components.length === 0) && appMode === "edit" && (
-          <div className="text-xs text-gray-400 text-center py-2">CardView</div>
+          <EmptyDropZone
+            id={`empty-${$Name}`}
+            targetName={$Name}
+            className="min-h-[30px]"
+          />
         )}
-      </div>
+      </DroppableZone>
     )
   }
 
@@ -429,7 +445,8 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
   const { 
     currentProject, appMode, setAppMode,
     selectedComponent, setSelectedComponent, setShowProperties,
-    selectedRepo, currentScreenName, setActiveTab
+    selectedRepo, currentScreenName, setActiveTab,
+    projectAssets
   } = useIDEStore()
 
   // Device state
@@ -770,21 +787,27 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
               )}
 
               {/* Screen Content */}
-              <div 
-                className="flex-1 overflow-auto flex flex-col p-2"
-                onClick={() => {
-                  if (appMode === "edit") {
-                    // Click on empty area - select the screen itself
-                    setSelectedComponent(props)
-                    setShowProperties(true)
-                  }
-                }}
+              <DroppableZone
+                id={`drop-${props.$Name}`}
+                targetName={props.$Name}
+                className="flex-1 overflow-auto flex flex-col p-2 relative"
                 style={{
                   backgroundColor: convertColor(props.BackgroundColor || "&HFFFFFFFF"),
                   alignItems: convertAlignment(props.AlignHorizontal),
                   justifyContent: convertAlignment(props.AlignVertical)
                 }}
+                disabled={appMode !== "edit"}
               >
+                <div 
+                  className="absolute inset-0 z-0"
+                  onClick={() => {
+                    if (appMode === "edit") {
+                      // Click on empty area - select the screen itself
+                      setSelectedComponent(props)
+                      setShowProperties(true)
+                    }
+                  }}
+                />
                 {props.$Components?.map((comp) => {
                   // Filter hidden components based on showHiddenComponents flag
                   const isHidden = comp.Visible === "False" || comp.Hidden === "True"
@@ -799,20 +822,19 @@ export function PhonePreview({ onLoginClick }: PhonePreviewProps) {
                       onSelect={handleComponentSelect}
                       selectedName={selectedComponent?.$Name}
                       appMode={appMode}
+                      assets={projectAssets}
                     />
                   )
                 })}
                 
                 {(!props.$Components || props.$Components.length === 0) && appMode === "edit" && (
-                  <div className="flex-1 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 text-sm m-2">
-                    <div className="text-center">
-                      <PlusCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p>Arraste componentes da paleta</p>
-                      <p className="text-xs mt-1">ou clique em um componente para adicionar</p>
-                    </div>
-                  </div>
+                  <EmptyDropZone
+                    id={`empty-${props.$Name}`}
+                    targetName={props.$Name}
+                    className="flex-1 m-2"
+                  />
                 )}
-              </div>
+              </DroppableZone>
 
               {/* Non-Visible Components Bar */}
               {props.$Components?.some(c => 

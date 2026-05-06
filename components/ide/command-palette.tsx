@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { 
   Plus, Layout, GitBranch, Package, Settings, 
-  Github, Blocks, X 
+  Github, Blocks, X, Download, Code2, Sparkles
 } from "lucide-react"
 import { useIDEStore } from "@/lib/ide-store"
 import { cn } from "@/lib/utils"
@@ -13,23 +13,32 @@ interface CommandPaletteProps {
   onSettingsClick: () => void
   onLoginClick: () => void
   onBlocksClick: () => void
+  onBlocksEditorClick?: () => void
+  onExportClick?: () => void
+  onTemplatesClick?: () => void
 }
 
 const actions = [
   { id: "new_comp", name: "Adicionar Componente...", icon: Plus },
   { id: "open_screen", name: "Abrir Tela...", icon: Layout },
+  { id: "templates", name: "Galeria de Templates", icon: Sparkles },
+  { id: "blocks_editor", name: "Editor de Blocos", icon: Code2 },
+  { id: "export", name: "Exportar Projeto", icon: Download },
   { id: "commit", name: "Commitar Mudanças", icon: GitBranch },
   { id: "build", name: "Build APK", icon: Package },
   { id: "settings", name: "Configurações IA", icon: Settings },
   { id: "login", name: "Login GitHub", icon: Github },
-  { id: "blocks", name: "Ver Todos os Blocos", icon: Blocks }
+  { id: "blocks", name: "Ver Blocos da Tela", icon: Blocks }
 ]
 
 export function CommandPalette({ 
   onBuildClick, 
   onSettingsClick, 
   onLoginClick, 
-  onBlocksClick 
+  onBlocksClick,
+  onBlocksEditorClick,
+  onExportClick,
+  onTemplatesClick
 }: CommandPaletteProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState("")
@@ -51,6 +60,15 @@ export function CommandPalette({
       case "open_screen":
         setActiveTab("telas")
         break
+      case "templates":
+        onTemplatesClick?.()
+        break
+      case "blocks_editor":
+        onBlocksEditorClick?.()
+        break
+      case "export":
+        onExportClick?.()
+        break
       case "build":
         onBuildClick()
         break
@@ -64,7 +82,7 @@ export function CommandPalette({
         onBlocksClick()
         break
     }
-  }, [setActiveTab, onBuildClick, onSettingsClick, onLoginClick, onBlocksClick])
+  }, [setActiveTab, onBuildClick, onSettingsClick, onLoginClick, onBlocksClick, onBlocksEditorClick, onExportClick, onTemplatesClick])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -20,6 +20,7 @@ import { useIDEStore } from "@/lib/ide-store"
 import { fetchUserRepos, fetchRepoTree, fetchFileContent, updateFileContent } from "@/lib/github-service"
 import { cn } from "@/lib/utils"
 import type { GitHubRepo, ProjectAsset, ScreenFile } from "@/lib/ide-types"
+import { DraggableComponent } from "./draggable-component"
 
 const tabs = [
   { id: "componentes", label: "Paleta", icon: Layout, title: "PALETA DE COMPONENTES" },
@@ -176,7 +177,7 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
     setShowProperties, setSelectedComponent
   } = useIDEStore()
   
-  const [draggedComp, setDraggedComp] = useState<string | null>(null)
+  
   const [loadingScreen, setLoadingScreen] = useState<string | null>(null)
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
@@ -466,10 +467,6 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
     }
   }, [ghToken, ghRepos.length, ghReposLoading, loadRepos])
 
-  const handleDragStart = (compName: string) => {
-    setDraggedComp(compName)
-  }
-
   const handleComponentClick = (compName: string) => {
     if (currentProject) {
       addComponent(currentProject.Properties.$Name, compName)
@@ -621,24 +618,28 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
                         </span>
                       </button>
                       
-                      {/* Category Components */}
-                      {expandedCategories[category.name] && (
-                        <div className="grid grid-cols-2 gap-1.5 mt-1.5 pl-5">
-                          {category.components.map((comp) => (
-                            <div
-                              key={comp.name}
-                              draggable
-                              onClick={() => handleComponentClick(comp.name)}
-                              onDragStart={() => handleDragStart(comp.name)}
-                              className="component-item flex-col items-center gap-1.5 p-2 border border-border rounded-lg cursor-grab active:cursor-grabbing hover:border-primary/50 hover:shadow-sm"
-                              title={comp.description}
-                            >
-                              <comp.icon className="w-4 h-4" />
-                              <span className="text-[9px] font-medium text-center leading-tight">{comp.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+{/* Category Components */}
+                                      {expandedCategories[category.name] && (
+                                        <div className="grid grid-cols-2 gap-1.5 mt-1.5 pl-5">
+                                          {category.components.map((comp) => (
+                                            <DraggableComponent
+                                              key={comp.name}
+                                              id={`palette-${comp.name}`}
+                                              componentType={comp.name}
+                                              onClick={() => handleComponentClick(comp.name)}
+                                              disabled={!currentProject}
+                                            >
+                                              <div
+                                                className="component-item flex flex-col items-center gap-1.5 p-2 border border-border rounded-lg hover:border-primary/50 hover:shadow-sm transition-all"
+                                                title={comp.description}
+                                              >
+                                                <comp.icon className="w-4 h-4" />
+                                                <span className="text-[9px] font-medium text-center leading-tight">{comp.name}</span>
+                                              </div>
+                                            </DraggableComponent>
+                                          ))}
+                                        </div>
+                                      )}
                     </div>
                   ))
                 )}
