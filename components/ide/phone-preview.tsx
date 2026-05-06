@@ -5,7 +5,7 @@ import { Edit3, Play, Zap, PlusCircle, Github, Smartphone, Tablet, Monitor, Rota
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useIDEStore } from "@/lib/ide-store"
-import type { KodularComponent } from "@/lib/ide-types"
+import type { KodularComponent, ProjectAsset } from "@/lib/ide-types"
 import { cn } from "@/lib/utils"
 
 // Device presets
@@ -67,13 +67,28 @@ interface ComponentRendererProps {
   onSelect: (comp: KodularComponent) => void
   selectedName?: string
   appMode: "edit" | "run"
+  assets?: ProjectAsset[]
 }
 
-function ComponentRenderer({ component, onSelect, selectedName, appMode }: ComponentRendererProps) {
+// Resolve asset URL from asset name
+function resolveAssetUrl(assetName: string | undefined, assets: ProjectAsset[]): string | null {
+  if (!assetName) return null
+  // Find asset by name (case insensitive)
+  const asset = assets.find(a => a.name.toLowerCase() === assetName.toLowerCase())
+  return asset?.url || null
+}
+
+function ComponentRenderer({ component, onSelect, selectedName, appMode, assets = [] }: ComponentRendererProps) {
   const { $Type, $Name, $Components } = component
 
-  // Non-visible components
-  if (["Clock", "Sound", "Notifier", "TinyDB", "Web", "Firebase", "Cloudinary"].includes($Type)) {
+  // Non-visible components (services, not UI)
+  const nonVisibleTypes = [
+    "Clock", "Sound", "Notifier", "TinyDB", "Web", "Firebase", "Cloudinary",
+    "FirebaseDB", "TinyWebDB", "BluetoothClient", "BluetoothServer",
+    "ActivityStarter", "TextToSpeech", "SpeechRecognizer", "Sharing",
+    "PhoneCall", "Texting", "Twitter", "ProbeNetwork", "Network"
+  ]
+  if (nonVisibleTypes.some(t => $Type.includes(t))) {
     return null
   }
 
@@ -172,12 +187,13 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
   }
 
   if ($Type === "Image") {
-    const imageSrc = component.Picture as string
+    const pictureName = component.Picture as string
+    const imageSrc = resolveAssetUrl(pictureName, assets)
     return (
       <div
         onClick={handleClick}
         className={cn(
-          "cursor-pointer transition-all flex items-center justify-center",
+          "cursor-pointer transition-all flex items-center justify-center overflow-hidden",
           isSelected && "ring-2 ring-blue-500 ring-offset-1 rounded"
         )}
         style={baseStyle}
@@ -187,7 +203,13 @@ function ComponentRenderer({ component, onSelect, selectedName, appMode }: Compo
             src={imageSrc} 
             alt={$Name}
             className="max-w-full max-h-full object-contain"
+            crossOrigin="anonymous"
           />
+        ) : pictureName ? (
+          <div className="w-full h-full bg-gray-200/50 rounded flex flex-col items-center justify-center text-gray-400 text-xs p-2">
+            <span className="truncate max-w-full">{pictureName}</span>
+            <span className="text-[10px] opacity-60">Asset nao encontrado</span>
+          </div>
         ) : (
           <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">
             Imagem

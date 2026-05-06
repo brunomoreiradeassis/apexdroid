@@ -624,9 +624,8 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
         {activeTab === "telas" && (
           <ScrollArea className="flex-1">
             <div className="p-3">
-              <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                TELAS DO PROJETO
-                <Plus className="w-3.5 h-3.5 cursor-pointer hover:text-foreground" />
+              <div className="flex justify-end mb-2">
+                <Plus className="w-3.5 h-3.5 cursor-pointer hover:text-foreground text-muted-foreground" title="Nova tela" />
               </div>
               {screenFiles.length === 0 ? (
                 <div className="text-center py-8">
