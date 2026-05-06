@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { IDEHeader } from "@/components/ide/ide-header"
-import { AIChat } from "@/components/ide/ai-chat"
 import { Sidebar } from "@/components/ide/sidebar"
 import { PhonePreview } from "@/components/ide/phone-preview"
 import { PropertiesPanel } from "@/components/ide/properties-panel"
@@ -63,7 +62,6 @@ export default function IDEPage() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <AIChat />
         <Sidebar onLoginClick={() => setLoginModalOpen(true)} />
         <PhonePreview onLoginClick={() => setLoginModalOpen(true)} />
         <PropertiesPanel onShowBlocks={() => setBlocksModalOpen(true)} />

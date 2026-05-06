@@ -10,9 +10,11 @@ import {
   Clock, Bell, Database, Globe, Video, Music,
   Calendar, MapPin, Phone, MessageSquare, Camera, Mic,
   Share2, Settings, Wifi, Bluetooth, ChevronDown, ChevronRight,
-  Box, Layers, CreditCard, TextCursorInput
+  Box, Layers, CreditCard, TextCursorInput, Sparkles, Send,
+  Smartphone, GitPullRequest, HardDrive, Network
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useIDEStore } from "@/lib/ide-store"
 import { fetchUserRepos, fetchRepoTree, fetchFileContent, updateFileContent } from "@/lib/github-service"
@@ -20,11 +22,13 @@ import { cn } from "@/lib/utils"
 import type { GitHubRepo, ProjectAsset, ScreenFile } from "@/lib/ide-types"
 
 const tabs = [
-  { id: "componentes", label: "PALETA" },
-  { id: "telas", label: "TELAS" },
-  { id: "github", label: "PROJETOS" },
-  { id: "assets", label: "ASSETS" },
-  { id: "cloud", label: "CLOUD" }
+  { id: "componentes", label: "Paleta", icon: Layout, title: "PALETA DE COMPONENTES" },
+  { id: "telas", label: "Telas", icon: Smartphone, title: "TELAS DO PROJETO" },
+  { id: "github", label: "Projetos", icon: FolderGit2, title: "PROJETOS GITHUB" },
+  { id: "assets", label: "Assets", icon: HardDrive, title: "ASSETS DO PROJETO" },
+  { id: "cloud", label: "Cloud", icon: Cloud, title: "APEX CLOUD" },
+  { id: "arvore", label: "Arvore", icon: Network, title: "ARVORE DE COMPONENTES" },
+  { id: "chat", label: "Chat", icon: Sparkles, title: "APEX DROID AI" },
 ]
 
 // Kodular component categories with all components
@@ -183,6 +187,7 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
   })
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [chatInput, setChatInput] = useState("")
 
   const toggleCategory = (categoryName: string) => {
     setExpandedCategories(prev => ({
@@ -480,28 +485,74 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
     )
   })).filter(category => category.components.length > 0)
 
+  const { chatMessages, addChatMessage } = useIDEStore()
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim()) return
+    const userMessage = { id: Date.now().toString(), role: "user" as const, content: chatInput }
+    addChatMessage(userMessage)
+    setChatInput("")
+    setTimeout(() => {
+      addChatMessage({
+        id: (Date.now() + 1).toString(),
+        role: "assistant" as const,
+        content: "Entendi! Vou ajudar com isso. " + (currentProject ? "Posso adicionar componentes ou modificar propriedades do projeto." : "Primeiro carregue um projeto para eu fazer modificações.")
+      })
+    }, 800)
+  }
+
+  const renderComponentTree = (comp: import("@/lib/ide-types").KodularComponent, depth = 0): React.ReactNode => (
+    <div key={comp.$Name}>
+      <div
+        onClick={() => { setSelectedComponent(comp); setShowProperties(true) }}
+        className={cn(
+          "flex items-center gap-1.5 py-1 rounded text-xs cursor-pointer hover:bg-secondary transition-all",
+          selectedComponent?.$Name === comp.$Name && "bg-primary/20 text-primary"
+        )}
+        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+      >
+        <Box className="w-3 h-3 shrink-0 opacity-50" />
+        <span className="truncate">{comp.$Name}</span>
+        <span className="text-[9px] text-muted-foreground ml-auto pr-2">{comp.$Type?.split(".").pop()}</span>
+      </div>
+      {comp.$Components?.map((child) => renderComponentTree(child, depth + 1))}
+    </div>
+  )
+
+  const activeTabMeta = tabs.find(t => t.id === activeTab)
+
   return (
-    <aside className="w-[280px] bg-card border-r border-border flex flex-col shrink-0">
-      {/* Tabs */}
-      <div className="flex p-1 bg-card border-b border-border gap-0.5">
+    <aside className="bg-card border-r border-border flex shrink-0" style={{ width: "300px" }}>
+      {/* Icon Rail - vertical tab icons */}
+      <div className="w-12 bg-card border-r border-border flex flex-col items-center py-2 gap-1 shrink-0">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
+            title={tab.label}
             className={cn(
-              "flex-1 py-2 px-1 text-center text-[9px] font-bold uppercase tracking-wider rounded transition-all",
-              activeTab === tab.id 
-                ? "text-primary bg-primary/20" 
+              "w-9 h-9 flex items-center justify-center rounded-lg transition-all relative",
+              activeTab === tab.id
+                ? "bg-primary text-primary-foreground shadow-md"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             )}
           >
-            {tab.label}
+            <tab.icon className="w-4 h-4" />
+            {tab.id === "chat" && chatMessages.length > 0 && (
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+            )}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      {/* Content panel */}
+      <div className="flex-1 overflow-hidden flex flex-col" style={{ width: "248px" }}>
+        {/* Tab title */}
+        <div className="px-3 py-2 border-b border-border shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            {activeTabMeta?.title}
+          </span>
+        </div>
         {/* Palette Tab - Complete Kodular Components */}
         {activeTab === "componentes" && (
           <div className="flex-1 flex flex-col overflow-hidden">
@@ -889,6 +940,70 @@ export function Sidebar({ onLoginClick }: SidebarProps) {
               )}
             </div>
           </ScrollArea>
+        )}
+
+        {/* Component Tree Tab */}
+        {activeTab === "arvore" && (
+          <ScrollArea className="flex-1">
+            <div className="p-2">
+              {!currentProject ? (
+                <div className="text-center py-10">
+                  <Network className="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-40" />
+                  <p className="text-xs text-muted-foreground">Nenhuma tela carregada.</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Selecione uma tela para ver a arvore.</p>
+                </div>
+              ) : (
+                <div>
+                  <div className="text-[10px] text-muted-foreground px-2 mb-2">
+                    Clique em um componente para seleciona-lo
+                  </div>
+                  {renderComponentTree(currentProject.Properties)}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        )}
+
+        {/* Chat Tab */}
+        {activeTab === "chat" && (
+          <>
+            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+              {chatMessages.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                  <Sparkles className="w-10 h-10 text-primary mb-3 opacity-60" />
+                  <p className="text-xs font-medium mb-1">APEX Droid AI</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Pergunte sobre seu projeto, peça para adicionar componentes ou modificar propriedades.
+                  </p>
+                </div>
+              )}
+              {chatMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "max-w-[90%] px-3 py-2 rounded-xl text-xs leading-relaxed",
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground self-end rounded-br-sm"
+                      : "bg-secondary text-secondary-foreground self-start rounded-bl-sm border border-border"
+                  )}
+                >
+                  {msg.content}
+                </div>
+              ))}
+            </div>
+            <div className="p-2 border-t border-border flex gap-1.5 shrink-0">
+              <Input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendChatMessage()}
+                placeholder="Ex: Adicione um botao azul..."
+                className="bg-input border-border text-xs h-8"
+              />
+              <Button size="sm" className="px-2 h-8 shrink-0" onClick={sendChatMessage}>
+                <Send className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </>
         )}
       </div>
     </aside>

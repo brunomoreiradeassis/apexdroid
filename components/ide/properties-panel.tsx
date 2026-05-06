@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, Zap, Box, ChevronDown, ChevronRight, Trash2, Copy, Eye, EyeOff, Palette } from "lucide-react"
+import { X, Zap, ChevronDown, ChevronRight, Trash2, Copy, Palette } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -301,31 +301,6 @@ export function PropertiesPanel({ onShowBlocks }: PropertiesPanelProps) {
     )
   }
 
-  // Build outline tree
-  const renderOutline = () => {
-    if (!currentProject) return null
-
-    const renderNode = (comp: KodularComponent, depth: number = 0) => (
-      <div key={comp.$Name}>
-        <div 
-          onClick={() => setSelectedComponent(comp)}
-          className={cn(
-            "flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer hover:bg-secondary transition-all",
-            selectedComponent?.$Name === comp.$Name && "bg-primary/20 text-primary"
-          )}
-          style={{ paddingLeft: `${depth * 12 + 8}px` }}
-        >
-          <Box className="w-3 h-3 opacity-50" />
-          <span className="truncate">{comp.$Name}</span>
-          <span className="text-[9px] text-muted-foreground ml-auto">{comp.$Type}</span>
-        </div>
-        {comp.$Components?.map((child) => renderNode(child, depth + 1))}
-      </div>
-    )
-
-    return renderNode(currentProject.Properties)
-  }
-
   return (
     <aside className="w-[300px] bg-card border-l border-border flex flex-col shrink-0">
       {/* Header */}
@@ -469,22 +444,6 @@ export function PropertiesPanel({ onShowBlocks }: PropertiesPanelProps) {
         )}
       </div>
 
-      {/* Component Tree */}
-      <div className="p-4 border-t border-border shrink-0 max-h-[200px] overflow-hidden flex flex-col">
-        <button
-          onClick={() => toggleSection("tree")}
-          className="w-full flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 hover:text-foreground"
-        >
-          {expandedSections.tree ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          ARVORE DE COMPONENTES
-        </button>
-        
-        {expandedSections.tree && (
-          <ScrollArea className="flex-1">
-            {renderOutline()}
-          </ScrollArea>
-        )}
-      </div>
     </aside>
   )
 }
